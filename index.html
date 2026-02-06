@@ -2,107 +2,105 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>ODE Hub 3.1</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ODE Hub 3.5</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 :root {
-  --bg: #020617;
-  --panel: #020617;
-  --panel2: #0f172a;
-  --accent: #38bdf8;
-  --text: #e5e7eb;
-  --danger: #ef4444;
+  --bg: #0b0f1a;
+  --panel: #12182b;
+  --accent: #6cf2c2;
+  --text: #e8ecff;
+  --muted: #8892c6;
+  --danger: #ff6b6b;
 }
 
-* { box-sizing: border-box; }
-
+* { box-sizing: border-box; font-family: system-ui, sans-serif; }
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
 }
 
 /* TOP BAR */
-#top {
+#topbar {
+  height: 48px;
   display: flex;
   gap: 8px;
   padding: 8px;
-  background: #020617;
+  background: #0e1430;
   align-items: center;
-  border-bottom: 1px solid #1e293b;
-}
-
-input, button, select {
-  background: #020617;
-  border: 1px solid #334155;
-  color: var(--text);
-  padding: 7px;
-  border-radius: 8px;
-}
-
-button:hover, select:hover {
-  border-color: var(--accent);
 }
 
 #url {
   flex: 1;
+  background: #0a1025;
+  border: 1px solid #1c2550;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
 }
+
+button {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid #1c2550;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
 
 /* DESKTOP */
 #desktop {
-  position: relative;
-  width: 100vw;
-  height: calc(100vh - 52px);
-  overflow: hidden;
+  position: absolute;
+  inset: 48px 0 0 0;
 }
 
-/* WINDOW */
+/* WINDOWS */
 .window {
   position: absolute;
-  width: 70vw;
-  height: 70vh;
-  background: white;
+  width: 520px;
+  height: 360px;
+  background: var(--panel);
   border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0,0,0,.6);
 }
 
 .titlebar {
-  background: #020617;
-  color: var(--text);
-  padding: 8px;
-  cursor: move;
+  height: 36px;
+  background: #0d1433;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  cursor: move;
 }
 
 .tabs {
   display: flex;
-  gap: 6px;
-  padding: 6px;
-  background: #020617;
+  background: #0a1025;
+  overflow-x: auto;
 }
 
 .tab {
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: #020617;
-  border: 1px solid #334155;
+  padding: 6px 10px;
   cursor: pointer;
+  white-space: nowrap;
 }
-
 .tab.active {
-  border-color: var(--accent);
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
 }
 
 iframe {
-  width: 100%;
-  height: calc(100% - 86px);
+  flex: 1;
   border: none;
+  background: #000;
 }
 
 /* AI STATUS */
@@ -110,12 +108,12 @@ iframe {
   position: fixed;
   bottom: 10px;
   right: 10px;
-  background: #020617;
-  border: 1px solid #334155;
-  border-radius: 10px;
+  width: 260px;
+  background: #0d1433;
+  border: 1px solid #1c2550;
+  border-radius: 12px;
   padding: 10px;
   font-size: 12px;
-  max-width: 260px;
   display: none;
 }
 </style>
@@ -123,17 +121,12 @@ iframe {
 
 <body>
 
-<div id="top">
-  <select onchange="openApp(this.value)">
-    <option value="">➕ Open App</option>
-    <option value="proxy">🌐 Browser</option>
-    <option value="snake">🐍 Snake</option>
-    <option value="dino">🦖 Dino</option>
-  </select>
-
-  <input id="url" placeholder="Search or enter URL" />
-  <button onclick="openProxy()">Open Tab</button>
-  <button onclick="toggleAI()">🤖 AI Inspector</button>
+<div id="topbar">
+  <input id="url" placeholder="Search or enter URL (Ctrl+L)" />
+  <button onclick="openProxy()">Open</button>
+  <button onclick="openGame('snake')">Snake</button>
+  <button onclick="openGame('dino')">Dino</button>
+  <button onclick="toggleAI()">AI</button>
 </div>
 
 <div id="desktop"></div>
@@ -142,11 +135,10 @@ iframe {
 <script>
 const desktop = document.getElementById("desktop");
 const input = document.getElementById("url");
-const aiBox = document.getElementById("aiStatus");
-
+const ai = document.getElementById("aiStatus");
 let z = 10;
 
-/* ---------- SMART INPUT ---------- */
+/* UTIL */
 function normalize(v) {
   v = v.trim();
   if (!v) return "";
@@ -156,28 +148,26 @@ function normalize(v) {
   return "https://duckduckgo.com/?q=" + encodeURIComponent(v);
 }
 
-/* ---------- WINDOW ---------- */
+/* WINDOW SYSTEM */
 function createWindow(title) {
   const w = document.createElement("div");
   w.className = "window";
-  w.style.top = "60px";
-  w.style.left = "60px";
+  w.style.top = "80px";
+  w.style.left = "80px";
   w.style.zIndex = ++z;
 
   w.innerHTML = `
     <div class="titlebar">
       <span>${title}</span>
-      <button onclick="this.closest('.window').remove()">✖</button>
+      <button onclick="this.closest('.window').remove()">✕</button>
     </div>
     <div class="tabs"></div>
   `;
-
   drag(w);
   desktop.appendChild(w);
   return w;
 }
 
-/* ---------- TABS ---------- */
 function addTab(win, label, src) {
   const tabs = win.querySelector(".tabs");
   const iframe = document.createElement("iframe");
@@ -203,26 +193,23 @@ function addTab(win, label, src) {
   monitorIframe(iframe);
 }
 
-/* ---------- APPS ---------- */
-function openApp(app) {
-  if (!app) return;
-  const w = createWindow(app);
-  if (app === "snake") addTab(w, "Snake", "/games/snake.html");
-  if (app === "dino") addTab(w, "Dino", "/games/dino.html");
-}
-
+/* APPS */
 function openProxy() {
   const url = normalize(input.value);
   if (!url) return;
   const w = createWindow("Browser");
-  addTab(w, "Tab 1", "/proxy/" + encodeURIComponent(url));
+  addTab(w, "Tab 1", url);
 }
 
-/* ---------- DRAG ---------- */
+function openGame(game) {
+  const w = createWindow(game.toUpperCase());
+  addTab(w, game, `/games/${game}.html`);
+}
+
+/* DRAG */
 function drag(el) {
   const bar = el.querySelector(".titlebar");
   let x=0,y=0,dx=0,dy=0;
-
   bar.onmousedown = e => {
     el.style.zIndex = ++z;
     dx = e.clientX; dy = e.clientY;
@@ -237,40 +224,58 @@ function drag(el) {
   };
 }
 
-/* ---------- AI INSPECTOR (SAFE) ---------- */
+/* AI MONITOR (SAFE) */
 function monitorIframe(frame) {
   let retries = 0;
-
-  const check = setInterval(() => {
+  const timer = setInterval(() => {
     try {
-      const doc = frame.contentDocument;
-      if (!doc || doc.body.innerText.includes("Proxy error")) {
-        retries++;
-        aiLog("⚠️ Load issue detected. Retry " + retries);
-        frame.src = frame.src;
-      }
+      if (!frame.contentDocument) throw 1;
+    } catch {
+      retries++;
+      aiLog("⚠️ Load issue detected. Retrying...");
+      frame.src = frame.src;
       if (retries >= 3) {
-        aiLog("❌ Page failed after retries.");
-        clearInterval(check);
+        aiLog("❌ Page failed repeatedly.");
+        clearInterval(timer);
       }
-    } catch {}
-  }, 3000);
+    }
+  }, 4000);
 }
 
 function aiLog(msg) {
-  aiBox.style.display = "block";
-  aiBox.innerHTML = `<strong>AI Inspector</strong><br>${msg}`;
+  ai.style.display = "block";
+  ai.innerHTML = "<b>AI Inspector</b><br>" + msg;
 }
 
 function toggleAI() {
-  aiBox.style.display = aiBox.style.display === "none" ? "block" : "none";
+  ai.style.display = ai.style.display === "none" ? "block" : "none";
 }
-</script>
 
-</body>
-</html>
+/* KEYBOARD SHORTCUTS */
+document.addEventListener("keydown", e => {
+  const win = document.querySelector(".window:last-child");
 
-showTarget('dino');
+  if (e.ctrlKey && e.key === "l") {
+    e.preventDefault();
+    input.focus();
+    input.select();
+  }
+
+  if (e.ctrlKey && e.key === "t") {
+    e.preventDefault();
+    openProxy();
+  }
+
+  if (e.ctrlKey && e.key === "w") {
+    e.preventDefault();
+    win?.remove();
+  }
+
+  if (e.ctrlKey && e.key === "r") {
+    e.preventDefault();
+    win?.querySelectorAll("iframe").forEach(f => f.src = f.src);
+  }
+});
 </script>
 
 </body>
