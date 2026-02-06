@@ -1,0 +1,18 @@
+{
+  "name": "ode-hub",
+  "version": "3.0.0",
+  "description": "ODE Hub 3.0 — Games, AI Chat, Proxy & Search",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^3.4.0",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": ["games","AI","proxy","ode-hub","duckduckgo"],
+  "author": "Your Name",
+  "license": "MIT"
+}

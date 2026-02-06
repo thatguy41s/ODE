@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ODE Hub 3.0 — Interstellar Doge Edition</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg:#0b0c1a;
+  --card:#1a1b2c;
+  --accent:#38bdf8;
+  --accent2:#facc15;
+  --highlight:#f97316;
+  --text:#f8fafc;
+  --user:#0ff;
+  --bot:#facc15;
+}
+body, html { margin:0; padding:0; width:100%; height:100%; font-family:'Segoe UI',sans-serif; background:var(--bg); color:var(--text); }
+header { background:var(--card); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(0,0,0,0.5); }
+h1 { margin:0; font-size:1.5rem; }
+.dropdown { position:relative; }
+.dropbtn { background:var(--accent); color:#000; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:600; }
+.dropdown-content { display:none; position:absolute; top:100%; left:0; background:var(--card); min-width:180px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; }
+.dropdown-content button { width:100%; text-align:left; padding:10px; border:none; background:none; color:var(--text); cursor:pointer; font-weight:500; }
+.dropdown-content button:hover { background:var(--highlight); color:#000; }
+.dropdown:hover .dropdown-content { display:block; }
+
+main { flex:1; display:flex; flex-direction:column; height:calc(100% - 60px); }
+iframe { width:100%; flex:1; border:none; display:none; background:#fff; }
+iframe.active { display:block; }
+
+#aiPanel { display:none; flex-direction:column; flex:1; padding:10px; gap:6px; background:var(--card); }
+#messages { flex:1; overflow-y:auto; }
+.message { margin:4px 0; }
+.user { color:var(--user); }
+.bot { color:var(--bot); }
+#inputRow { display:flex; gap:6px; margin-top:6px; }
+#userInput { flex:1; padding:8px; border-radius:6px; border:1px solid #334155; background:#020617; color:#fff; }
+#sendBtn { padding:8px 16px; border:none; border-radius:6px; background:var(--accent); cursor:pointer; font-weight:700; color:#000; }
+
+#searchPanel { display:none; flex-direction:column; flex:1; padding:10px; gap:6px; }
+#searchRow { display:flex; gap:6px; }
+#searchInput { flex:1; padding:8px; border-radius:6px; border:1px solid #334155; background:#020617; color:#fff; }
+#searchBtn { padding:8px 16px; border:none; border-radius:6px; background:var(--accent2); cursor:pointer; font-weight:700; color:#000; }
+
+#alertBanner { display:none; background:#f97316; color:#000; padding:6px 12px; text-align:center; font-weight:600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ODE Hub 3.0</h1>
+  <div class="dropdown">
+    <button class="dropbtn">Menu ▼</button>
+    <div class="dropdown-content">
+      <button data-target="dino">Dino</button>
+      <button data-target="snake">Snake</button>
+      <button data-target="ragdoll">Ragdoll Archers</button>
+      <button data-target="search">Search / URL</button>
+      <button data-target="ai">AI Chat</button>
+    </div>
+  </div>
+</header>
+
+<div id="alertBanner"></div>
+
+<main>
+  <iframe id="dino" src="games/dino.html"></iframe>
+  <iframe id="snake" src="games/snake.html"></iframe>
+  <iframe id="ragdoll" title="Ragdoll Archers Game"></iframe>
+
+  <div id="searchPanel">
+    <div id="searchRow">
+      <input id="searchInput" placeholder="Enter URL or keywords">
+      <button id="searchBtn">Go</button>
+    </div>
+    <iframe id="searchFrame" style="flex:1; width:100%; border:none;"></iframe>
+  </div>
+
+  <div id="aiPanel">
+    <div id="messages"></div>
+    <div id="inputRow">
+      <input id="userInput" placeholder="Ask AI...">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const menuButtons = document.querySelectorAll('.dropdown-content button');
+const frames = { dino: document.getElementById('dino'), snake: document.getElementById('snake'), ragdoll: document.getElementById('ragdoll') };
+const searchPanel = document.getElementById('searchPanel');
+const searchFrame = document.getElementById('searchFrame');
+const aiPanel = document.getElementById('aiPanel');
+const alertBanner = document.getElementById('alertBanner');
+
+// Show selected target
+function showTarget(target){
+  Object.values(frames).forEach(f=>f.style.display='none');
+  searchPanel.style.display='none';
+  aiPanel.style.display='none';
+
+  if(target==='ai') aiPanel.style.display='flex';
+  else if(target==='search') searchPanel.style.display='flex';
+  else if(target==='ragdoll'){
+    frames.ragdoll.src="/proxy/https://www.crazygames.com/game/ragdoll-archers";
+    frames.ragdoll.style.display='block';
+  } else frames[target].style.display='block';
+}
+
+// Dropdown menu clicks
+menuButtons.forEach(btn=>btn.addEventListener('click',()=>showTarget(btn.dataset.target)));
+
+// SEARCH FUNCTION
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+searchBtn.addEventListener('click', doSearch);
+searchInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+
+function doSearch(){
+  let val = searchInput.value.trim();
+  if(!val) return;
+  if(/^https?:\/\//i.test(val) || /^www\./i.test(val) || /\.com/i.test(val)){
+    if(!/^https?:\/\//i.test(val)) val = 'http://' + val;
+  } else {
+    val = 'https://duckduckgo.com/?q=' + encodeURIComponent(val);
+  }
+  searchFrame.src = '/proxy/' + encodeURIComponent(val);
+}
+
+// AI CHAT
+const messagesDiv = document.getElementById('messages');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', e=>{ if(e.key==='Enter') sendMessage(); });
+
+async function sendMessage(){
+  const text = userInput.value.trim();
+  if(!text) return;
+  addMsg('user', text);
+  userInput.value='';
+  try{
+    const res = await fetch('/ai',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:text})});
+    const data = await res.json();
+    addMsg('bot', data.reply);
+  }catch(e){ addMsg('bot','AI error: '+e.message);}
+}
+
+function addMsg(role,text){ const div=document.createElement('div'); div.className='message '+role; div.textContent=(role==='user'?'You: ':'AI: ')+text; messagesDiv.appendChild(div); messagesDiv.scrollTop=messagesDiv.scrollHeight; }
+
+// AI MONITORING WITH AUTO-RELOAD
+setInterval(async ()=>{
+  let activeFrame = null;
+  for(let key in frames){ if(frames[key].style.display==='block') activeFrame=frames[key]; }
+  if(searchPanel.style.display==='flex') activeFrame=searchFrame;
+  if(!activeFrame || !activeFrame.src) return;
+
+  try{
+    const res = await fetch(activeFrame.src, {method:'HEAD'});
+    if(!res.ok){
+      activeFrame.src = activeFrame.src;
+      alertBanner.style.display='block';
+      alertBanner.textContent='⚠️ Page failed to load, reloading...';
+      setTimeout(()=>alertBanner.style.display='none', 4000);
+    } else {
+      alertBanner.style.display='none';
+    }
+  } catch(err){
+    activeFrame.src = activeFrame.src;
+    alertBanner.style.display='block';
+    alertBanner.textContent='⚠️ Network issue detected, reloading...';
+    setTimeout(()=>alertBanner.style.display='none', 4000);
+  }
+},5000);
+
+// Show default tab
+showTarget('dino');
+</script>
+
+</body>
+</html>

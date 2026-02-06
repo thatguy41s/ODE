@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Snake (Offline)</title>
+<style>
+  body { margin:0; background:black; }
+  canvas { display:block; margin:auto; background:#111; }
+</style>
+</head>
+<body>
+<canvas id="c" width="400" height="400"></canvas>
+<script>
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
+let s=[{x:200,y:200}],d={x:20,y:0},f={x:100,y:100};
+
+document.onkeydown=e=>{
+ if(e.key==="ArrowUp")d={x:0,y:-20};
+ if(e.key==="ArrowDown")d={x:0,y:20};
+ if(e.key==="ArrowLeft")d={x:-20,y:0};
+ if(e.key==="ArrowRight")d={x:20,y:0};
+};
+
+setInterval(()=>{
+ ctx.clearRect(0,0,400,400);
+ let h={x:s[0].x+d.x,y:s[0].y+d.y};
+ if(h.x<0||h.y<0||h.x>=400||h.y>=400) s=[{x:200,y:200}];
+ s.unshift(h);
+ if(h.x===f.x&&h.y===f.y){
+  f={x:Math.random()*19|0*20,y:Math.random()*19|0*20};
+ } else s.pop();
+ ctx.fillStyle="lime";
+ s.forEach(p=>ctx.fillRect(p.x,p.y,18,18));
+ ctx.fillStyle="red";
+ ctx.fillRect(f.x,f.y,18,18);
+},120);
+</script>
+</body>
+</html>
