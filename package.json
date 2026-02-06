@@ -1,5 +1,4 @@
-{
-  "name": "ode-hub",
+"name": "ode-hub",
   "version": "3.0.0",
   "description": "ODE Hub 3.0 — Games, AI Chat, Proxy & Search",
   "main": "server.js",
